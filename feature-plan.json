@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "current_feature": "skeleton-and-job-queue",
+  "features": [
+    {
+      "id": "skeleton-and-job-queue",
+      "title": "FastAPI/React skeleton with job queue and video upload",
+      "status": "done",
+      "acceptance": [
+        "FastAPI backend starts and serves health endpoint",
+        "React frontend builds and loads",
+        "Video upload API accepts files and creates job records",
+        "Job queue processes uploads with basic status tracking",
+        "Frontend shows upload form and job list with status",
+        "Docker Compose runs backend, frontend, and Keycloak"
+      ],
+      "implementation": [
+        "backend/app/main.py",
+        "backend/app/models/__init__.py",
+        "backend/app/api/jobs.py",
+        "backend/app/services/video_processor.py",
+        "backend/app/core/config.py",
+        "backend/app/core/database.py",
+        "frontend/src/App.tsx",
+        "frontend/src/main.tsx",
+        "frontend/vite.config.ts",
+        "compose.yaml",
+        "backend/Dockerfile",
+        "frontend/Dockerfile",
+        "frontend/nginx.conf",
+        ".github/workflows/ci.yml"
+      ],
+      "tests": [
+        "backend/tests/test_api.py",
+        "backend/tests/test_models.py",
+        "backend/tests/test_services.py",
+        "backend/tests/conftest.py",
+        "frontend/src/App.test.tsx",
+        "frontend/vitest.config.ts"
+      ]
+    },
+    {
+      "id": "video-restoration-pipeline",
+      "title": "Core video restoration pipeline with FFmpeg/PyAV",
+      "status": "planned",
+      "acceptance": [
+        "Pipeline accepts job, runs deblocking/denoising via FFmpeg",
+        "Progress updates streamed to frontend via WebSocket or polling",
+        "Completed jobs produce downloadable output files",
+        "SAR handling fix for undeclared aspect ratios",
+        "CPU encoding fallback (libx265) when NVENC unavailable"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "oidc-auth-keycloak",
+      "title": "OIDC authentication with Keycloak",
+      "status": "planned",
+      "acceptance": [
+        "Login redirects to Keycloak, callback exchanges code for tokens",
+        "Backend validates JWT with signature/issuer/audience checks",
+        "Frontend stores tokens in memory (not localStorage)",
+        "Protected endpoints reject unauthenticated requests",
+        "Role-based access: viewer/operator/admin"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "ltx-model-integration",
+      "title": "LTX model integration for AI-based restoration",
+      "status": "planned",
+      "acceptance": [
+        "LTX model loads and runs inference on uploaded clips",
+        "Model feedback collection endpoint (issue #489)",
+        "Opt-in LLM explanations for restoration decisions",
+        "Provider-agnostic LLM adapter (OpenAI-compatible, Anthropic, Gemini)"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "pause-resume-skip",
+      "title": "Pause/resume and skip completed files",
+      "status": "planned",
+      "acceptance": [
+        "Jobs can be paused and resumed from checkpoint",
+        "Already-processed files skipped on restart (issue #364)",
+        "Partial progress persisted to database"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "vr180-grid-fix",
+      "title": "VR180 grid pattern artifact fix",
+      "status": "planned",
+      "acceptance": [
+        "SBS+Fisheye mode processes without grid artifacts (issue #354)",
+        "Per-eye mode continues working",
+        "Documented limitation/workaround for affected content"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "amd-amf-support",
+      "title": "AMD/AMF encoder fixes and AV1 10-bit support",
+      "status": "planned",
+      "acceptance": [
+        "SAR crash fixed for undeclared aspect ratios (issue #471)",
+        "AV1 AMF encoder initializes with working parameters",
+        "Documented working parameter combinations"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "container-activation",
+      "title": "gVisor/Modal container activation support",
+      "status": "planned",
+      "acceptance": [
+        "Machine identity derivation works in gVisor sandboxes (issue #525)",
+        "Offline --machine-key works without persistent hardware ID",
+        "Cloud workspace activation documented for ephemeral containers"
+      ],
+      "implementation": [],
+      "tests": []
+    },
+    {
+      "id": "frame-interpolation",
+      "title": "Single-pass frame interpolation",
+      "status": "planned",
+      "acceptance": [
+        "RIFE or FILM model integrated for interpolation",
+        "Single encoding pass for deblocking + interpolation (issue #365)",
+        "Configurable target FPS and quality"
+      ],
+      "implementation": [],
+      "tests": []
+    }
+  ]
+}

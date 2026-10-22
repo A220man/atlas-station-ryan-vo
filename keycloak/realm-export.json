@@ -1,0 +1,73 @@
+{
+  "realm": "atlas",
+  "enabled": true,
+  "displayName": "Atlas Station",
+  "displayNameHtml": "<div class=\"kc-logo-text\"><span>Atlas Station</span></div>",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "defaultRoles": ["viewer"],
+  "roles": {
+    "realm": [
+      {"name": "viewer", "description": "Can view jobs and download results", "composite": false, "clientRole": false},
+      {"name": "operator", "description": "Can create and manage jobs", "composite": false, "clientRole": false},
+      {"name": "admin", "description": "Full administrative access", "composite": true, "clientRole": false, "composites": {"realm": ["viewer", "operator"]}}
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "atlas-frontend",
+      "name": "Atlas Station Frontend",
+      "description": "SPA client for Atlas Station",
+      "rootUrl": "http://localhost:3000",
+      "adminUrl": "http://localhost:3000",
+      "baseUrl": "/",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "redirectUris": ["http://localhost:3000/callback", "http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "publicClient": false,
+      "frontchannelLogout": false,
+      "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "access.token.lifespan": "3600",
+        "client.secret.creation.time": "0"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
+      "defaultClientScopes": ["openid", "profile", "email", "roles"],
+      "optionalClientScopes": []
+    }
+  ],
+  "clientScopes": [
+    {"name": "openid", "description": "OpenID Connect scope", "protocol": "openid-connect", "attributes": {"include.in.token.scope": "true", "display.on.consent.screen": "true"}},
+    {"name": "profile", "description": "Profile scope", "protocol": "openid-connect", "attributes": {"include.in.token.scope": "true", "display.on.consent.screen": "true"}},
+    {"name": "email", "description": "Email scope", "protocol": "openid-connect", "attributes": {"include.in.token.scope": "true", "display.on.consent.screen": "true"}},
+    {"name": "roles", "description": "User roles", "protocol": "openid-connect", "attributes": {"include.in.token.scope": "true", "display.on.consent.screen": "false"}}
+  ],
+  "defaultDefaultClientScopes": ["openid", "profile", "email", "roles"],
+  "defaultOptionalClientScopes": [],
+  "groups": [],
+  "users": []
+}

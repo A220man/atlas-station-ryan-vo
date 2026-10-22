@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "name": "atlas-station-ryan-vo",
+  "owner": "A220man",
+  "email": "ryandtvo@gmail.com",
+  "domain": "AI/ML developer tools",
+  "summary": "Work in progress: atlas-station-ryan-vo",
+  "workflows": [
+    "Upload videos and run restoration with automatic hardware encoder selection (NVENC/AMF/CPU)",
+    "Pause, resume, and cancel long-running jobs with skip-completed file detection",
+    "Collect structured feedback on LTX model outputs for model improvement"
+  ],
+  "auth": "oidc-keycloak-saml-broker",
+  "llm_providers": [
+    "openai-compatible",
+    "anthropic",
+    "gemini",
+    "ollama"
+  ],
+  "status": "work-in-progress"
+}
