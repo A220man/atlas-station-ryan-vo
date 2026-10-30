@@ -4,7 +4,7 @@ from sqlalchemy import func, desc
 from typing import List, Optional, Dict, Any
 import json
 
-from app.core.database import get_db
+from app.core.database import get_db, db_session
 from app.models import Job, VideoFile, JobStatus, JobType, JobEvent
 from app.api.schemas import (
     JobCreate, JobResponse, JobListResponse, VideoFileResponse, 
@@ -75,9 +75,14 @@ async def upload_files(
         options=options_dict,
     )
     
-    # Start background processing
-    background_tasks.add_task(process_job, job, db)
+    # Start background processing with a new database session
+    def process_job_wrapper(job_id: str):
+        with db_session() as bg_db:
+            job = bg_db.query(Job).filter(Job.id == job_id).first()
+            if job:
+                process_job(job, bg_db)
     
+    background_tasks.add_task(process_job_wrapper, job.id)
     # Return response
     video_files = db.query(VideoFile).filter(VideoFile.job_id == job.id).all()
     
@@ -153,7 +158,15 @@ def resume_job(job_id: str, background_tasks: BackgroundTasks, db: Session = Dep
         raise HTTPException(status_code=400, detail=f"Cannot resume job in status {job.status}")
     job.status = JobStatus.QUEUED
     db.commit()
-    background_tasks.add_task(process_job, job, db)
+    
+    # Start background processing with a new database session
+    def process_job_wrapper(job_id: str):
+        with db_session() as bg_db:
+            job = bg_db.query(Job).filter(Job.id == job_id).first()
+            if job:
+                process_job(job, bg_db)
+    
+    background_tasks.add_task(process_job_wrapper, job_id)
     return {"status": "resumed", "job_id": job_id}
 
 
