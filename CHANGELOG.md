@@ -1,8 +1,18 @@
 # Changelog
 
+## 1.2.0 — work-in-progress checkpoint
+
+Partial code published for continued development. Known issues: STATUS.md.
+
 ## 1.1.0 — work-in-progress checkpoint
 
 Partial code published for continued development. Known issues: STATUS.md.
+
+### Fixed (this round)
+
+- Backend test database isolation: fixed flaky tests caused by in-memory SQLite creating separate databases per engine
+- Switched tests to file-based SQLite (`sqlite:///./test.db`) with per-test data cleanup
+- All 28 backend tests and 4 frontend tests now pass consistently
 
 ## 1.0.0 — work-in-progress checkpoint
 
