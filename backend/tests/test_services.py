@@ -97,7 +97,9 @@ class TestJobCreation:
 
 class TestJobProcessing:
     @patch("app.services.video_processor.subprocess.Popen")
-    def test_process_job_success(self, mock_popen, db_session):
+    @patch("app.services.video_processor.has_nvenc", return_value=False)
+    @patch("app.services.video_processor.has_amf", return_value=False)
+    def test_process_job_success(self, mock_amf, mock_nvenc, mock_popen, db_session):
         # Create a job with a video file
         job = Job(
             id="test-job-id",
@@ -141,7 +143,9 @@ class TestJobProcessing:
         assert video_file.output_size == 2000
 
     @patch("app.services.video_processor.subprocess.Popen")
-    def test_process_job_failure(self, mock_popen, db_session):
+    @patch("app.services.video_processor.has_nvenc", return_value=False)
+    @patch("app.services.video_processor.has_amf", return_value=False)
+    def test_process_job_failure(self, mock_amf, mock_nvenc, mock_popen, db_session):
         job = Job(
             id="test-job-id-2",
             type=JobType.RESTORATION,
@@ -176,3 +180,62 @@ class TestJobProcessing:
         assert job.status == JobStatus.FAILED
         assert video_file.status == VideoFileStatus.FAILED
         assert "FFmpeg error" in video_file.error_message
+
+    @patch("app.services.video_processor.subprocess.Popen")
+    @patch("app.services.video_processor.has_nvenc", return_value=False)
+    @patch("app.services.video_processor.has_amf", return_value=False)
+    def test_process_job_resume_skips_completed(self, mock_amf, mock_nvenc, mock_popen, db_session):
+        """Test that resume=True skips already completed files (issue #364)."""
+        job = Job(
+            id="test-job-id-3",
+            type=JobType.RESTORATION,
+            status=JobStatus.QUEUED,
+            input_dir="/tmp/test",
+            options_json=json.dumps({}),
+        )
+        db_session.add(job)
+        
+        # First file: already completed with output
+        video_file1 = VideoFile(
+            id="test-file-id-3a",
+            job_id=job.id,
+            original_filename="completed.mp4",
+            original_path="/tmp/test/completed.mp4",
+            file_size=1000,
+            status=VideoFileStatus.COMPLETED,
+            output_path="/tmp/output/restored_completed.mp4",
+        )
+        # Second file: pending (should be processed)
+        video_file2 = VideoFile(
+            id="test-file-id-3b",
+            job_id=job.id,
+            original_filename="pending.mp4",
+            original_path="/tmp/test/pending.mp4",
+            file_size=1000,
+            status=VideoFileStatus.PENDING,
+        )
+        db_session.add_all([video_file1, video_file2])
+        db_session.commit()
+        
+        # Mock successful FFmpeg run
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("", "")
+        mock_proc.returncode = 0
+        mock_popen.return_value = mock_proc
+        
+        with patch("pathlib.Path.stat") as mock_stat:
+            mock_stat.return_value.st_size = 2000
+            with patch("pathlib.Path.mkdir"):
+                with patch("pathlib.Path.exists", return_value=True):
+                    process_job(job, db_session, resume=True)
+        
+        db_session.refresh(job)
+        db_session.refresh(video_file1)
+        db_session.refresh(video_file2)
+        
+        # Completed file should remain completed, not reprocessed
+        assert video_file1.status == VideoFileStatus.COMPLETED
+        # Pending file should be processed
+        assert video_file2.status == VideoFileStatus.COMPLETED
+        # FFmpeg should be called once for encoder detection + once for actual processing
+        assert mock_popen.call_count == 1  # only processing (encoder detection mocked)

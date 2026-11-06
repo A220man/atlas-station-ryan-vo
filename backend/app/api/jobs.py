@@ -80,7 +80,7 @@ async def upload_files(
         with db_session() as bg_db:
             job = bg_db.query(Job).filter(Job.id == job_id).first()
             if job:
-                process_job(job, bg_db)
+                process_job(job, bg_db, resume=True)
     
     background_tasks.add_task(process_job_wrapper, job.id)
     # Return response
@@ -164,7 +164,7 @@ def resume_job(job_id: str, background_tasks: BackgroundTasks, db: Session = Dep
         with db_session() as bg_db:
             job = bg_db.query(Job).filter(Job.id == job_id).first()
             if job:
-                process_job(job, bg_db)
+                process_job(job, bg_db, resume=True)
     
     background_tasks.add_task(process_job_wrapper, job_id)
     return {"status": "resumed", "job_id": job_id}

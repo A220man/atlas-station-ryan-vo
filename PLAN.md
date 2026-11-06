@@ -58,12 +58,16 @@ Acceptance:
 
 ### pause-resume-skip — Pause/resume and skip completed files
 
-Status: planned
+Status: in_progress
 
 Acceptance:
 - Jobs can be paused and resumed from checkpoint
-- Already-processed files skipped on restart (issue #364)
+- Already-processed files skipped on restart (issue #364) ✓
 - Partial progress persisted to database
+
+Implementation: `backend/app/services/video_processor.py`, `backend/app/api/jobs.py`
+
+Tests: `backend/tests/test_services.py::TestJobProcessing::test_process_job_resume_skips_completed`
 
 ### vr180-grid-fix — VR180 grid pattern artifact fix
 
