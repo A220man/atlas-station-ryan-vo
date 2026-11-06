@@ -121,8 +121,14 @@ def build_restoration_filterchain(options: Dict[str, Any]) -> str:
     return ",".join(filters) if filters else "null"
 
 
-def process_job(job: Job, db: Session) -> None:
-    """Main job processing function. Runs synchronously in background worker."""
+def process_job(job: Job, db: Session, resume: bool = False) -> None:
+    """Main job processing function. Runs synchronously in background worker.
+    
+    Args:
+        job: The job to process
+        db: Database session
+        resume: If True, skip files that are already COMPLETED with valid output
+    """
     job.status = JobStatus.PROCESSING
     job.started_at = datetime.now(timezone.utc)
     job.current_step = "initializing"
@@ -138,10 +144,17 @@ def process_job(job: Job, db: Session) -> None:
         
         # Process each file
         for video_file in job.files:
+            # Skip already completed files when resuming (issue #364)
+            if resume and video_file.status == VideoFileStatus.COMPLETED and video_file.output_path:
+                output_path = Path(video_file.output_path)
+                if output_path.exists():
+                    job.current_step = f"skipping completed {video_file.original_filename}"
+                    db.commit()
+                    continue
+            
             video_file.status = VideoFileStatus.PROCESSING
             video_file.progress = 0.0
             db.commit()
-            
             input_path = Path(video_file.original_path)
             output_filename = f"restored_{video_file.original_filename}"
             output_path = output_dir / output_filename

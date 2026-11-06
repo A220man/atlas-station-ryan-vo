@@ -83,14 +83,19 @@
     {
       "id": "pause-resume-skip",
       "title": "Pause/resume and skip completed files",
-      "status": "planned",
+      "status": "in_progress",
       "acceptance": [
         "Jobs can be paused and resumed from checkpoint",
-        "Already-processed files skipped on restart (issue #364)",
+        "Already-processed files skipped on restart (issue #364) \u2713",
         "Partial progress persisted to database"
       ],
-      "implementation": [],
-      "tests": []
+      "implementation": [
+        "backend/app/services/video_processor.py",
+        "backend/app/api/jobs.py"
+      ],
+      "tests": [
+        "backend/tests/test_services.py::TestJobProcessing::test_process_job_resume_skips_completed"
+      ]
     },
     {
       "id": "vr180-grid-fix",
