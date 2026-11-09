@@ -40,9 +40,10 @@ class Job(Base):
     input_dir = Column(String(500), nullable=True)
     output_dir = Column(String(500), nullable=True)
 
-    # Processing options (JSON as text)
-    options_json = Column(Text, nullable=True)
+    # Process tracking
+    process_pid = Column(Integer, nullable=True)
 
+    options_json = Column(Text, nullable=True)
     # Timestamps
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)

@@ -129,9 +129,12 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
         db: Database session
         resume: If True, skip files that are already COMPLETED with valid output
     """
+    import os
+    import time
     job.status = JobStatus.PROCESSING
     job.started_at = datetime.now(timezone.utc)
     job.current_step = "initializing"
+    job.process_pid = os.getpid()
     db.commit()
     
     try:
@@ -144,6 +147,13 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
         
         # Process each file
         for video_file in job.files:
+            # Check if job was paused or cancelled before starting each file
+            db.refresh(job)
+            if job.status in (JobStatus.PAUSED, JobStatus.CANCELLED):
+                job.current_step = "paused" if job.status == JobStatus.PAUSED else "cancelled"
+                db.commit()
+                return
+            
             # Skip already completed files when resuming (issue #364)
             if resume and video_file.status == VideoFileStatus.COMPLETED and video_file.output_path:
                 output_path = Path(video_file.output_path)
@@ -184,7 +194,7 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
             
             cmd.append(str(output_path))
             
-            # Run FFmpeg with progress tracking
+            # Run FFmpeg with progress tracking and pause/cancel checking
             try:
                 proc = subprocess.Popen(
                     cmd,
@@ -193,11 +203,41 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
                     text=True,
                 )
                 
-                # Monitor progress (simplified - real implementation would parse stderr)
-                stdout, stderr = proc.communicate(timeout=3600)
-                
-                if proc.returncode != 0:
-                    raise RuntimeError(f"FFmpeg failed: {stderr[:500]}")
+                # Monitor process with pause/cancel checking
+                while True:
+                    # Check job status periodically
+                    db.refresh(job)
+                    if job.status == JobStatus.PAUSED:
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            proc.kill()
+                            proc.wait()
+                        job.current_step = f"paused during {video_file.original_filename}"
+                        video_file.status = VideoFileStatus.PENDING
+                        video_file.progress = 0.0
+                        db.commit()
+                        return
+                    elif job.status == JobStatus.CANCELLED:
+                        proc.kill()
+                        proc.wait()
+                        job.current_step = f"cancelled during {video_file.original_filename}"
+                        video_file.status = VideoFileStatus.FAILED
+                        video_file.error_message = "Job cancelled"
+                        db.commit()
+                        return
+                    
+                    # Check if process completed
+                    ret = proc.poll()
+                    if ret is not None:
+                        stdout, stderr = proc.communicate()
+                        if ret != 0:
+                            raise RuntimeError(f"FFmpeg failed: {stderr[:500]}")
+                        break
+                    
+                    # Small sleep to avoid busy loop
+                    time.sleep(0.5)
                 
                 # Update file record
                 video_file.status = VideoFileStatus.COMPLETED
@@ -236,17 +276,21 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
         job.completed_at = datetime.now(timezone.utc)
         job.current_step = "completed"
         job.output_dir = str(output_dir)
+        job.process_pid = None
         
     except Exception as e:
-        job.status = JobStatus.FAILED
-        job.error_message = str(e)
-        job.completed_at = datetime.now(timezone.utc)
-        db.add(JobEvent(
-            job_id=job.id,
-            event_type="job_failed",
-            message=f"Job failed: {e}",
-            data_json=json.dumps({"error": str(e)})
-        ))
+        # Only mark as failed if not paused/cancelled
+        if job.status not in (JobStatus.PAUSED, JobStatus.CANCELLED):
+            job.status = JobStatus.FAILED
+            job.error_message = str(e)
+            job.completed_at = datetime.now(timezone.utc)
+            db.add(JobEvent(
+                job_id=job.id,
+                event_type="job_failed",
+                message=f"Job failed: {e}",
+                data_json=json.dumps({"error": str(e)})
+            ))
+        job.process_pid = None
     
     db.commit()
 
