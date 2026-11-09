@@ -123,6 +123,8 @@ class TestJobProcessing:
         
         # Mock successful FFmpeg run
         mock_proc = MagicMock()
+        mock_proc.poll.side_effect = [None, 0]  # First call: running, Second: completed
+        mock_proc.wait.return_value = 0
         mock_proc.communicate.return_value = ("", "")
         mock_proc.returncode = 0
         mock_popen.return_value = mock_proc
@@ -132,7 +134,8 @@ class TestJobProcessing:
             mock_stat.return_value.st_size = 2000
             with patch("pathlib.Path.mkdir"):
                 with patch("pathlib.Path.exists", return_value=True):
-                    process_job(job, db_session)
+                    with patch("time.sleep"):  # Skip sleep in tests
+                        process_job(job, db_session)
         
         db_session.refresh(job)
         db_session.refresh(video_file)
@@ -219,6 +222,8 @@ class TestJobProcessing:
         
         # Mock successful FFmpeg run
         mock_proc = MagicMock()
+        mock_proc.poll.side_effect = [None, 0]  # First call: running, Second: completed
+        mock_proc.wait.return_value = 0
         mock_proc.communicate.return_value = ("", "")
         mock_proc.returncode = 0
         mock_popen.return_value = mock_proc
@@ -227,7 +232,8 @@ class TestJobProcessing:
             mock_stat.return_value.st_size = 2000
             with patch("pathlib.Path.mkdir"):
                 with patch("pathlib.Path.exists", return_value=True):
-                    process_job(job, db_session, resume=True)
+                    with patch("time.sleep"):  # Skip sleep in tests
+                        process_job(job, db_session, resume=True)
         
         db_session.refresh(job)
         db_session.refresh(video_file1)
