@@ -93,6 +93,7 @@ def get_best_encoder(codec: str = "hevc") -> str:
 
 def build_restoration_filterchain(options: Dict[str, Any]) -> str:
     """Build FFmpeg filter chain for video restoration."""
+    options = options or {}
     filters = []
     
     # Deblocking

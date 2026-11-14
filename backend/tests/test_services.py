@@ -60,6 +60,13 @@ class TestFilterChain:
         assert "scale=1920:1080" in chain
         assert "pad=1920:1080" in chain
 
+    def test_build_restoration_filterchain_none_options(self):
+        """Test that build_restoration_filterchain handles None options gracefully."""
+        chain = build_restoration_filterchain(None)
+        assert "deblock" in chain
+        assert "nlmeans" in chain or "hqdn3d" in chain
+        assert "setsar=1" in chain
+
 
 class TestJobCreation:
     def test_create_job_from_upload(self, db_session):
