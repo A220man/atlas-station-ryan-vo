@@ -252,3 +252,13 @@ class TestJobProcessing:
         assert video_file2.status == VideoFileStatus.COMPLETED
         # FFmpeg should be called once for encoder detection + once for actual processing
         assert mock_popen.call_count == 1  # only processing (encoder detection mocked)
+
+    def test_build_restoration_filterchain_no_deblock_no_denoise(self):
+        """Test filter chain when both deblock and denoise are disabled."""
+        options = {"deblock": False, "denoise": False}
+        chain = build_restoration_filterchain(options)
+        # SAR fix should still be applied by default
+        assert "setsar=1" in chain
+        # Neither deblock nor nlmeans/hqdn3d should be in the chain
+        assert "deblock" not in chain
+        assert "nlmeans" not in chain and "hqdn3d" not in chain
