@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import subprocess
 import shutil
@@ -15,6 +16,9 @@ from app.core.config import get_settings
 
 
 settings = get_settings()
+
+# FFmpeg progress pattern: frame=N fps=X q=Y
+progress_pattern = re.compile(r"frame=\\s*(\d+)\\s+fps=\\s*([\d.]+)\\s+q=\\s*([\d.]+)")
 
 
 def probe_video(file_path: Path) -> Dict[str, Any]:
@@ -204,7 +208,7 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
                     text=True,
                 )
                 
-                # Monitor process with pause/cancel checking
+                # Monitor process with pause/cancel checking and progress tracking
                 while True:
                     # Check job status periodically
                     db.refresh(job)
@@ -229,12 +233,36 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
                         db.commit()
                         return
                     
+                    # Check for FFmpeg progress in stderr (best-effort)
+                    # Use non-blocking read; mocks and real FFmpeg both benefit from this
+                    try:
+                        # Try non-blocking read - if not available, just skip
+                        if proc.stderr.readable():
+                            line = proc.stderr.read(1024)
+                            if isinstance(line, bytes):
+                                line = line.decode('utf-8', errors='replace')
+                        else:
+                            line = ""
+                    except Exception:
+                        line = ""
+                    if line and isinstance(line, str):
+                        match = progress_pattern.search(line)
+                        if match:
+                            frame_num = int(match.group(1))
+                            # Calculate approximate progress based on total frames
+                            # If we know the total frame count, we can compute percentage
+                            # Otherwise, just track that progress is happening
+                            if frame_num > 0:
+                                video_file.progress = min(95.0, video_file.progress + 0.5)
+                    
                     # Check if process completed
                     ret = proc.poll()
                     if ret is not None:
                         stdout, stderr = proc.communicate()
                         if ret != 0:
                             raise RuntimeError(f"FFmpeg failed: {stderr[:500]}")
+                        # Ensure progress reaches 100% on completion
+                        video_file.progress = 1.0
                         break
                     
                     # Small sleep to avoid busy loop
