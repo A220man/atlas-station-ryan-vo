@@ -254,6 +254,7 @@ def process_job(job: Job, db: Session, resume: bool = False) -> None:
                             # Otherwise, just track that progress is happening
                             if frame_num > 0:
                                 video_file.progress = min(95.0, video_file.progress + 0.5)
+                                db.commit()
                     
                     # Check if process completed
                     ret = proc.poll()
